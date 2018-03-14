@@ -17,14 +17,14 @@
       <input id="track" type="checkbox"/>
     </label>
   <p>
-    position long : <code id="pos-long"></code>&nbsp;&nbsp; position lat : <code id="pos-lat"></code>&nbsp;&nbsp; position accuracy : <code id="accuracy"></code>&nbsp;&nbsp; altitude : <code id="altitude"></code>&nbsp;&nbsp; altitude accuracy :
-    <code
-      id="altitudeAccuracy"></code>&nbsp;&nbsp; heading : <code id="heading"></code>&nbsp;&nbsp; speed : <code id="speed"></code>
+    position long : <code id="pos-long"></code>&nbsp;&nbsp;
+    <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
   </p>
   <script>
+    var london = ol.proj.transform([-0.12755, 51.507222], 'EPSG:4326', 'EPSG:3857');
     var view = new ol.View({
-      center: [0, 0],
-      zoom: 2
+      center: london,
+      zoom: 6
     });
 
     var map = new ol.Map({
@@ -56,6 +56,7 @@
 
     // update the HTML page when the position changes.
     geolocation.on('change', function() {
+      console.log("Location changed");
       var coordinates = geolocation.getPosition();
       el('pos-lon').innerText = coordinates[0];
       el('pos-lat').innerText = coordinates[1];
