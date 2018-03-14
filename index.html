@@ -17,7 +17,7 @@
       <input id="track" type="checkbox"/>
     </label>
   <p>
-    position long : <code id="pos-long"></code>&nbsp;&nbsp;
+    position long : <code id="pos-lon"></code>&nbsp;&nbsp;
     <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
   </p>
   <script>
@@ -94,11 +94,11 @@
     }));
 
     geolocation.on('change:position', function() {
-      if (geolocation.getAccuracy() < 10) {
+      // if (geolocation.getAccuracy() < 10) {
         var coordinates = geolocation.getPosition();
         positionFeature.setGeometry(coordinates ?
           new ol.geom.Point(coordinates) : null);
-      }
+      // }
     });
 
     new ol.layer.Vector({
