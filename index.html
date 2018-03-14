@@ -43,7 +43,13 @@
     });
 
     var geolocation = new ol.Geolocation({
-      projection: view.getProjection()
+      projection: view.getProjection(),
+      tracking: true,
+      trackingOptions: {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 6000
+      }
     });
 
     function el(id) {
