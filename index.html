@@ -100,11 +100,11 @@
     }));
 
     geolocation.on('change:position', function() {
-      // if (geolocation.getAccuracy() < 10) {
+      if (geolocation.getAccuracy() < 50) {
         var coordinates = geolocation.getPosition();
         positionFeature.setGeometry(coordinates ?
           new ol.geom.Point(coordinates) : null);
-      // }
+      }
     });
 
     new ol.layer.Vector({
