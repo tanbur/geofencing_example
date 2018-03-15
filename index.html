@@ -13,25 +13,29 @@
   <div id="map" class="map"></div>
   <div id="info" style="display: none;"></div>
   <label for="track">
-      track position
-      <input id="track" type="checkbox"/>
-    </label>
+    track position
+    <input id="track" type="checkbox"/>
+  </label>
   <p>
     position long : <code id="pos-lon"></code>&nbsp;&nbsp;
     <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
   </p>
   <script>
-    var london = ol.proj.transform([-0.12755, 51.507222], 'EPSG:4326', 'EPSG:3857');
+  var wgs84Proj = new ol.proj.Projection({ code : "EPSG:4326" });
+  var origProj = new ol.proj.Projection({ code : "EPSG:3857" });
+
+    var london = ol.proj.transform([-0.1256312, 51.5286883], wgs84Proj, origProj);
+    console.log(london);
     var view = new ol.View({
       center: london,
-      zoom: 6
+      zoom: 16
     });
 
     var map = new ol.Map({
       layers: [
-        new ol.layer.Tile({
-          source: new ol.source.OSM()
-        })
+      new ol.layer.Tile({
+        source: new ol.source.OSM()
+      })
       ],
       target: 'map',
       controls: ol.control.defaults({
@@ -100,8 +104,9 @@
     }));
 
     geolocation.on('change:position', function() {
-      if (geolocation.getAccuracy() < 50) {
+      if (geolocation.getAccuracy() < 500) {
         var coordinates = geolocation.getPosition();
+        console.log(coordinates);
         positionFeature.setGeometry(coordinates ?
           new ol.geom.Point(coordinates) : null);
       }
@@ -113,6 +118,69 @@
         features: [accuracyFeature, positionFeature]
       })
     });
+
+    // Do some geofencing
+    // Camden Town hall coordinates
+    var camdenCoord = [[51.5286883, -0.1256312],
+                      [ 51.5289842, -0.1259217],
+                      [ 51.5293304, -0.1250459],
+                      [51.5290490, -0.1247512]];
+    // Swap over lat long to long lat
+    // Also transforms the coordinates
+    camdenCoord = camdenCoord.map(coord => ol.proj.transform([coord[1], coord[0]], wgs84Proj, origProj));
+
+    // Create a polygon out of the coordinates
+    var camdenTownHallPoly = new ol.geom.Polygon([camdenCoord]);
+
+    // Create a openlayer feature that can be plotted
+    var camdenTownHallFeature = new ol.Feature({
+      geometry: camdenTownHallPoly,
+      name: "Camden Town Hall",
+          });
+
+    // Polygon style
+    // camdenTownHallFeature.setStyle(new ol.style.Style({
+    //   fill: new ol.style.Fill({ color: 'black' }),
+    //           stroke: new ol.style.Stroke({ color: '#000' }),
+    //       text: new ol.style.Text({
+    //           text: 'name',
+    //           font: '12px Calibri,sans-serif',
+    //           fill: new ol.style.Fill({ color: '#000' }),
+    //           stroke: new ol.style.Stroke({
+    //               color: '#fff', width: 2
+    //           })
+    //       })
+    //     })
+    //   );
+
+
+    var camdenTownHallPoint = new ol.geom.Point([-0.1259217, 51.5289842])
+    camdenTownHallPoint.transform(wgs84Proj, origProj);
+    var camdenTownHallCornerFeature = new ol.Feature({
+      geometry: camdenTownHallPoint,
+      name: "Camden Town Hall Point",
+          });
+    camdenTownHallCornerFeature.setStyle(new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 6,
+        fill: new ol.style.Fill({
+          color: '#3399CC'
+        }),
+        stroke: new ol.style.Stroke({
+          color: '#fff',
+          width: 2
+        })
+      })
+    }));
+
+    // Add the features to the map
+    new ol.layer.Vector({
+        map: map,
+        source: new ol.source.Vector({
+          features: [camdenTownHallFeature, camdenTownHallCornerFeature]
+        })
+      });
+
   </script>
 </body>
 
