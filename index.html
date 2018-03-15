@@ -17,6 +17,10 @@
     <input id="track" type="checkbox"/>
   </label>
   <p>
+    Tags:
+    <span id="geotags"></span>
+  </p>
+  <p>
     position long : <code id="pos-lon"></code>&nbsp;&nbsp;
     <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
   </p>
@@ -25,7 +29,7 @@
   var origProj = new ol.proj.Projection({ code : "EPSG:3857" });
 
     var london = ol.proj.transform([-0.1256312, 51.5286883], wgs84Proj, origProj);
-    console.log(london);
+
     var view = new ol.View({
       center: london,
       zoom: 16
@@ -106,7 +110,6 @@
     geolocation.on('change:position', function() {
       if (geolocation.getAccuracy() < 500) {
         var coordinates = geolocation.getPosition();
-        console.log(coordinates);
         positionFeature.setGeometry(coordinates ?
           new ol.geom.Point(coordinates) : null);
       }
@@ -124,7 +127,9 @@
     var camdenCoord = [[51.5286883, -0.1256312],
                       [ 51.5289842, -0.1259217],
                       [ 51.5293304, -0.1250459],
-                      [51.5290490, -0.1247512]];
+                      [51.5290490, -0.1247512],
+                      // [51.5286883, -0.1256312],
+                    ];
     // Swap over lat long to long lat
     // Also transforms the coordinates
     camdenCoord = camdenCoord.map(coord => ol.proj.transform([coord[1], coord[0]], wgs84Proj, origProj));
@@ -154,7 +159,9 @@
     //   );
 
 
-    var camdenTownHallPoint = new ol.geom.Point([-0.1259217, 51.5289842])
+    var camdenTownHallPoint = new ol.geom.Point([-0.1257000, 51.5289339])
+    // var camdenTownHallPoint = new ol.geom.Point([-0.1259900, 51.5289839])
+    // var camdenTownHallPoint = new ol.geom.Point([ -0.1259217, 51.5289842])
     camdenTownHallPoint.transform(wgs84Proj, origProj);
     var camdenTownHallCornerFeature = new ol.Feature({
       geometry: camdenTownHallPoint,
@@ -181,6 +188,34 @@
         })
       });
 
+    function inside(point, vs) {
+        // ray-casting algorithm based on
+        // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+
+        var x = point[0], y = point[1];
+
+        var inside = false;
+        for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            var xi = vs[i][0], yi = vs[i][1];
+            var xj = vs[j][0], yj = vs[j][1];
+
+            var intersect = ((yi > y) != (yj > y))
+                && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+
+        return inside;
+    };
+
+    var pointInPoly = inside(camdenTownHallPoint.getCoordinates(), camdenTownHallPoly.getCoordinates()[0]);
+    if(pointInPoly) {
+      el('geotags').innerHTML = "Camden Town Hall";
+    } else {
+      el('geotags').innerHTML = "";
+    }
+
+    var polygon = [ [ 1, 1 ], [ 1, 2 ], [ 2, 2 ], [ 2, 1 ] ];
+    console.log(inside([ 1.5, 1.5 ], polygon));
   </script>
 </body>
 
