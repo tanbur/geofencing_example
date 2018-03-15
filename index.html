@@ -18,7 +18,8 @@
   </label>
   <p>
     Tags:
-    <span id="geotags"></span>
+    <span id="geotags1"></span>
+    <span id="geotags2"></span>
   </p>
   <p>
     position long : <code id="pos-lon"></code>&nbsp;&nbsp;
@@ -193,20 +194,27 @@
 
     // Update the geotag depending on location
     geolocation.on('change:position', function() {
-      var newTags = [];
 
-      polyAndTag = [[camdenTownHallPoly, "Camden Town Hall"],
-                    [audPoly, "Auditorium"]]
 
-      for ([poly, tag] in polyAndTag) {
-        var pointInPoly = inside(geolocation.getPosition(),
-                                 poly.getCoordinates()[0]);
-        // Update html
-        if(pointInPoly) {
-           newTags.push(tag);
-        }
+      var pointInPoly = inside(geolocation.getPosition(),
+                               camdenTownHallPoly.getCoordinates()[0]);
+      if(pointInPoly) {
+        el('geotags1').innerHTML = "Camden Town Hall"
+      } else {
+        el('geotags1').innerHTML = ""
       }
-      el('geotags').innerHTML = newTags.join('; ');
+
+      var pointInPoly = inside(geolocation.getPosition(),
+                               audPoly.getCoordinates()[0]);
+      if(pointInPoly) {
+        el('geotags2').innerHTML = "Auditorium"
+      } else {
+        el('geotags2').innerHTML = ""
+      }
+
+
+
+
     });
   </script>
 </body>
