@@ -25,6 +25,25 @@
     <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
   </p>
   <script>
+  function inside(point, vs) {
+      // ray-casting algorithm based on
+      // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+
+      var x = point[0], y = point[1];
+
+      var inside = false;
+      for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+          var xi = vs[i][0], yi = vs[i][1];
+          var xj = vs[j][0], yj = vs[j][1];
+
+          var intersect = ((yi > y) != (yj > y))
+              && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+      }
+
+      return inside;
+  };
+
   var wgs84Proj = new ol.proj.Projection({ code : "EPSG:4326" });
   var origProj = new ol.proj.Projection({ code : "EPSG:3857" });
 
@@ -55,7 +74,7 @@
       tracking: true,
       trackingOptions: {
         enableHighAccuracy: true,
-        maximumAge: 2500,
+        maximumAge: 1000,
         timeout: 6000
       }
     });
@@ -158,64 +177,25 @@
     //     })
     //   );
 
-
-    var camdenTownHallPoint = new ol.geom.Point([-0.1257000, 51.5289339])
-    // var camdenTownHallPoint = new ol.geom.Point([-0.1259900, 51.5289839])
-    // var camdenTownHallPoint = new ol.geom.Point([ -0.1259217, 51.5289842])
-    camdenTownHallPoint.transform(wgs84Proj, origProj);
-    var camdenTownHallCornerFeature = new ol.Feature({
-      geometry: camdenTownHallPoint,
-      name: "Camden Town Hall Point",
-          });
-    camdenTownHallCornerFeature.setStyle(new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 6,
-        fill: new ol.style.Fill({
-          color: '#3399CC'
-        }),
-        stroke: new ol.style.Stroke({
-          color: '#fff',
-          width: 2
-        })
-      })
-    }));
-
-    // Add the features to the map
+    // Add the polygon to the map
     new ol.layer.Vector({
         map: map,
         source: new ol.source.Vector({
-          features: [camdenTownHallFeature, camdenTownHallCornerFeature]
+          features: [camdenTownHallFeature]
         })
       });
 
-    function inside(point, vs) {
-        // ray-casting algorithm based on
-        // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-
-        var x = point[0], y = point[1];
-
-        var inside = false;
-        for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-            var xi = vs[i][0], yi = vs[i][1];
-            var xj = vs[j][0], yj = vs[j][1];
-
-            var intersect = ((yi > y) != (yj > y))
-                && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-        }
-
-        return inside;
-    };
-
-    var pointInPoly = inside(camdenTownHallPoint.getCoordinates(), camdenTownHallPoly.getCoordinates()[0]);
-    if(pointInPoly) {
-      el('geotags').innerHTML = "Camden Town Hall";
-    } else {
-      el('geotags').innerHTML = "";
-    }
-
-    var polygon = [ [ 1, 1 ], [ 1, 2 ], [ 2, 2 ], [ 2, 1 ] ];
-    console.log(inside([ 1.5, 1.5 ], polygon));
+    // Update the geotag depending on location
+    geolocation.on('change:position', function() {
+      var pointInPoly = inside(geolocation.getPosition(),
+                               camdenTownHallPoly.getCoordinates()[0]);
+      // Update html
+      if(pointInPoly) {
+        el('geotags').innerHTML = "Camden Town Hall";
+      } else {
+        el('geotags').innerHTML = "";
+      }
+    });
   </script>
 </body>
 
