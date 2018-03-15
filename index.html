@@ -84,7 +84,8 @@
     }
 
     el('track').addEventListener('change', function() {
-      geolocation.setTracking(this.checked);
+      geolocation.setTracking(true);
+      // geolocation.setTracking(this.checked);
     });
 
     // update the HTML page when the position changes.
@@ -147,20 +148,25 @@
                       [ 51.5289842, -0.1259217],
                       [ 51.5293304, -0.1250459],
                       [51.5290490, -0.1247512],
-                      // [51.5286883, -0.1256312],
+                    ];
+    // Camden Town hall coordinates
+    var auditoriumCoord = [[51.528924, -0.125107],
+                      [ 51.529225, -0.125378],
+                      [ 51.5293304, -0.1250459],
+                      [51.5290490, -0.1247512],
                     ];
     // Swap over lat long to long lat
     // Also transforms the coordinates
     camdenCoord = camdenCoord.map(coord => ol.proj.transform([coord[1], coord[0]], wgs84Proj, origProj));
+    auditoriumCoord = auditoriumCoord.map(coord => ol.proj.transform([coord[1], coord[0]], wgs84Proj, origProj));
 
     // Create a polygon out of the coordinates
     var camdenTownHallPoly = new ol.geom.Polygon([camdenCoord]);
+    var audPoly = new ol.geom.Polygon([auditoriumCoord]);
 
     // Create a openlayer feature that can be plotted
-    var camdenTownHallFeature = new ol.Feature({
-      geometry: camdenTownHallPoly,
-      name: "Camden Town Hall",
-          });
+    var camdenTownHallFeature = new ol.Feature({geometry: camdenTownHallPoly});
+    var audFeature = new ol.Feature({geometry: audPoly});
 
     // Polygon style
     // camdenTownHallFeature.setStyle(new ol.style.Style({
@@ -181,20 +187,26 @@
     new ol.layer.Vector({
         map: map,
         source: new ol.source.Vector({
-          features: [camdenTownHallFeature]
+          features: [camdenTownHallFeature, audFeature]
         })
       });
 
     // Update the geotag depending on location
     geolocation.on('change:position', function() {
-      var pointInPoly = inside(geolocation.getPosition(),
-                               camdenTownHallPoly.getCoordinates()[0]);
-      // Update html
-      if(pointInPoly) {
-        el('geotags').innerHTML = "Camden Town Hall";
-      } else {
-        el('geotags').innerHTML = "";
+      var newTags = [];
+
+      polyAndTag = [[camdenTownHallPoly, "Camden Town Hall"],
+                    [audPoly, "Auditorium"]]
+
+      for ([poly, tag] in polyAndTag) {
+        var pointInPoly = inside(geolocation.getPosition(),
+                                 poly.getCoordinates()[0]);
+        // Update html
+        if(pointInPoly) {
+           newTags.push(tag);
+        }
       }
+      el('geotags').innerHTML = '; '.join(newTags);
     });
   </script>
 </body>
