@@ -10,7 +10,7 @@
 </head>
 
 <body>
-  <div id="map" class="map"></div>
+  <div id="map" class="map" style="max-width:800px"></div>
   <div id="info" style="display: none;"></div>
   <label for="track">
     track position
@@ -18,33 +18,15 @@
   </label>
   <p>
     Tags:
-    <span id="geotags1"></span>
-    <span id="geotags2"></span>
+    <div id="geotags1"></div>
+    <div id="geotags2"></div>
   </p>
   <p>
     position long : <code id="pos-lon"></code>&nbsp;&nbsp;
     <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
   </p>
+  <script src="geofencing.js"></script>
   <script>
-  function inside(point, vs) {
-      // ray-casting algorithm based on
-      // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-
-      var x = point[0], y = point[1];
-
-      var inside = false;
-      for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-          var xi = vs[i][0], yi = vs[i][1];
-          var xj = vs[j][0], yj = vs[j][1];
-
-          var intersect = ((yi > y) != (yj > y))
-              && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-          if (intersect) inside = !inside;
-      }
-
-      return inside;
-  };
-
   var wgs84Proj = new ol.proj.Projection({ code : "EPSG:4326" });
   var origProj = new ol.proj.Projection({ code : "EPSG:3857" });
 
@@ -84,10 +66,10 @@
       return document.getElementById(id);
     }
 
-    el('track').addEventListener('change', function() {
-      geolocation.setTracking(true);
-      // geolocation.setTracking(this.checked);
-    });
+    // el('track').addEventListener('change', function() {
+    //   geolocation.setTracking(true);
+    //   // geolocation.setTracking(this.checked);
+    // });
 
     // update the HTML page when the position changes.
     geolocation.on('change', function() {
@@ -129,7 +111,7 @@
     }));
 
     geolocation.on('change:position', function() {
-      if (geolocation.getAccuracy() < 500) {
+      if (geolocation.getAccuracy() < 50) {
         var coordinates = geolocation.getPosition();
         positionFeature.setGeometry(coordinates ?
           new ol.geom.Point(coordinates) : null);
@@ -156,48 +138,31 @@
                       [ 51.5293304, -0.1250459],
                       [51.5290490, -0.1247512],
                     ];
-    // Swap over lat long to long lat
-    // Also transforms the coordinates
-    camdenCoord = camdenCoord.map(coord => ol.proj.transform([coord[1], coord[0]], wgs84Proj, origProj));
-    auditoriumCoord = auditoriumCoord.map(coord => ol.proj.transform([coord[1], coord[0]], wgs84Proj, origProj));
 
     // Create a polygon out of the coordinates
-    var camdenTownHallPoly = new ol.geom.Polygon([camdenCoord]);
-    var audPoly = new ol.geom.Polygon([auditoriumCoord]);
+    var camdenTownHallPoly = coordinatesToPolygon(camdenCoord, projection=origProj, swapValues=true);
+    var auditoriumPoly = coordinatesToPolygon(auditoriumCoord, projection=origProj, swapValues=true);
 
     // Create a openlayer feature that can be plotted
     var camdenTownHallFeature = new ol.Feature({geometry: camdenTownHallPoly});
-    var audFeature = new ol.Feature({geometry: audPoly});
+    var auditoriumFeature = new ol.Feature({geometry: auditoriumPoly});
 
-    // Polygon style
-    // camdenTownHallFeature.setStyle(new ol.style.Style({
-    //   fill: new ol.style.Fill({ color: 'black' }),
-    //           stroke: new ol.style.Stroke({ color: '#000' }),
-    //       text: new ol.style.Text({
-    //           text: 'name',
-    //           font: '12px Calibri,sans-serif',
-    //           fill: new ol.style.Fill({ color: '#000' }),
-    //           stroke: new ol.style.Stroke({
-    //               color: '#fff', width: 2
-    //           })
-    //       })
-    //     })
-    //   );
-
-    // Add the polygon to the map
+    // Add the polygons to the map
     new ol.layer.Vector({
         map: map,
         source: new ol.source.Vector({
-          features: [camdenTownHallFeature, audFeature]
+          features: [camdenTownHallFeature, auditoriumFeature]
         })
       });
 
     // Update the geotag depending on location
     geolocation.on('change:position', function() {
-
-
+      // First work out whether the current user location is in the Camden Town Hall
+      // This should probably also include a check for the accuracy of the location.
       var pointInPoly = inside(geolocation.getPosition(),
                                camdenTownHallPoly.getCoordinates()[0]);
+      // This if should probably include a check to see if the previous point in the series of triggers has been checked.
+      // This is a very simple tag that appears or not when in the Camden Town Hall.
       if(pointInPoly) {
         el('geotags1').innerHTML = "Camden Town Hall"
       } else {
@@ -205,17 +170,30 @@
       }
 
       var pointInPoly = inside(geolocation.getPosition(),
-                               audPoly.getCoordinates()[0]);
+                               auditoriumPoly.getCoordinates()[0]);
+      pointInPoly = true;
       if(pointInPoly) {
-        el('geotags2').innerHTML = "Auditorium"
-      } else {
-        el('geotags2').innerHTML = ""
+        // This time we have written a function to call when we hit the auditorium.
+        // We have written it in a function enclosure to make sure it only ever runs once
+        auditoriumFunction();
       }
-
-
-
-
     });
+
+  // The function we call when we hit the auditorium. The meet of the function will only ever be run once - clever!
+  var auditoriumFunction = (function() {
+    // Instead of having a variable that might be lost on page refresh, check local storage instead.
+    var evaluated = false;
+    return function() {
+      if(evaluated === false) {
+        // Now do whatever you want when you get to the zone.
+        el('geotags2').innerHTML = "You found the auditorium!";
+        console.log("Changing auditorium message");
+        
+        // And don't forget to set evaluated to true so we don't go round again
+        evaluated = true;
+      }
+    }
+  })();
   </script>
 </body>
 
