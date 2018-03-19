@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Coordinate Selection</title>
+  <link rel="stylesheet" href="https://openlayers.org/en/v4.6.4/css/ol.css" type="text/css">
+  <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+  <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+  <script src="https://openlayers.org/en/v4.6.4/build/ol.js"></script>
+</head>
+
+<body>
+  <div id="map" class="map" style="max-width:800px"></div>
+  <div id="info" style="display: none;"></div>
+
+  <div>
+    <p id="polygon-coord">
+    </p>
+  </div>
+  <script src="geofencing.js"></script>
+  <script>
+    var wgs84Proj = new ol.proj.Projection({ code : "EPSG:4326" });
+    var origProj = new ol.proj.Projection({ code : "EPSG:3857" });
+
+    var london = ol.proj.transform([-0.1256312, 51.5286883], wgs84Proj, origProj);
+
+    var view = new ol.View({
+      center: london,
+      zoom: 16
+    });
+
+    var polygonSource = new ol.source.Vector({wrapX: false});
+
+
+    var map = new ol.Map({
+      layers: [
+      new ol.layer.Tile({
+        source: new ol.source.OSM()
+      }),
+      new ol.layer.Vector({
+        source: polygonSource,
+      })
+      ],
+      target: 'map',
+      controls: ol.control.defaults({
+        attributionOptions: {
+          collapsible: false
+        }
+      }),
+      view: view
+    });
+
+    function el(id) {
+      return document.getElementById(id);
+    }
+
+
+    draw = new ol.interaction.Draw({
+      source: polygonSource,
+      type: "Polygon"
+    });
+    map.addInteraction(draw);
+
+    // When we finish drawing, add the coordinates to the html
+    draw.on('drawend', (event) => {
+      var drawnFeature = event.feature;
+      var coordinates = drawnFeature.getGeometry().getCoordinates()[0];
+      el('polygon-coord').innerText += coordinatesToString(coordinates);
+      el('polygon-coord').innerText += "\n\n\n";
+    });
+
+    function coordinatesToString(coordinates) {
+      // Print out the coordinates nicely
+      var pairs = [];
+      var coordPair;
+      for(var i = 0; i < coordinates.length; i++) {
+        coordPair = ol.proj.transform(coordinates[i], origProj, wgs84Proj);
+        pairs.push('[' + coordPair.join(', ') + ']');
+      }
+      return pairs.join(',\n');
+    };
+
+    // var typeDraw = "Polygon";
+    // var draw; // global so we can remove it later
+    // function addInteraction() {
+    //   var value = typeDraw;
+    //   if (value !== 'None') {
+    //     draw = new ol.interaction.Draw({
+    //       source: polygonSource,
+    //       type: typeDraw
+    //     });
+    //     map.addInteraction(draw);
+    //   }
+    // }
+
+    // addInteraction();
+
+
+    // // Do some geofencing
+    // // Camden Town hall coordinates
+    // var camdenCoord = [[51.5286883, -0.1256312],
+    // [ 51.5289842, -0.1259217],
+    // [ 51.5293304, -0.1250459],
+    // [51.5290490, -0.1247512],
+    // ];
+    // // Camden Town hall coordinates
+    // var auditoriumCoord = [[51.528924, -0.125107],
+    // [ 51.529225, -0.125378],
+    // [ 51.5293304, -0.1250459],
+    // [51.5290490, -0.1247512],
+    // ];
+
+    // // Create a polygon out of the coordinates
+    // var camdenTownHallPoly = coordinatesToPolygon(camdenCoord, projection=origProj, swapValues=true);
+    // var auditoriumPoly = coordinatesToPolygon(auditoriumCoord, projection=origProj, swapValues=true);
+
+    // // Create a openlayer feature that can be plotted
+    // var camdenTownHallFeature = new ol.Feature({geometry: camdenTownHallPoly});
+    // var auditoriumFeature = new ol.Feature({geometry: auditoriumPoly});
+
+    // // Add the polygons to the map
+    // new ol.layer.Vector({
+    //   map: map,
+    //   source: new ol.source.Vector({
+    //     features: [camdenTownHallFeature, auditoriumFeature]
+    //   })
+    // });
+  </script>
+</body>
+
+</html>
