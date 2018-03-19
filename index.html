@@ -17,169 +17,221 @@
     track position
     <input id="track" type="checkbox"/>
   </label>
- -->  
-  <p>
-    Tags:
-    <div id="geotags1"></div>
-    <div id="geotags2"></div>
-  </p>
-  <p>
-    position long : <code id="pos-lon"></code>&nbsp;&nbsp;
-    <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
-  </p>
-  <script src="geofencing.js"></script>
-  <script>
+-->  
+<p>
+  Tags:
+  <div id="geotags1"></div>
+  <div id="geotags2"></div>
+  <div id="geotags3"></div>
+  <div id="geotags4"></div>
+</p>
+<p>
+  position long : <code id="pos-lon"></code>&nbsp;&nbsp;
+  <br> position lat : <code id="pos-lat"></code>&nbsp;&nbsp;<br> position accuracy : <code id="accuracy"></code>&nbsp;&nbsp;<br> altitude : <code id="altitude"></code>&nbsp;&nbsp;<br> altitude accuracy : <code id="altitudeAccuracy"></code>&nbsp;&nbsp;<br>    heading : <code id="heading"></code>&nbsp;&nbsp;<br> speed : <code id="speed"></code>
+</p>
+<script src="geofencing.js"></script>
+<script>
   var wgs84Proj = new ol.proj.Projection({ code : "EPSG:4326" });
   var origProj = new ol.proj.Projection({ code : "EPSG:3857" });
 
-    var london = ol.proj.transform([-0.1256312, 51.5286883], wgs84Proj, origProj);
+  var london = ol.proj.transform([-0.1256312, 51.5286883], wgs84Proj, origProj);
 
-    var view = new ol.View({
-      center: london,
-      zoom: 16
-    });
+  var view = new ol.View({
+    center: london,
+    zoom: 16
+  });
 
-    var map = new ol.Map({
-      layers: [
-      new ol.layer.Tile({
-        source: new ol.source.OSM()
-      })
-      ],
-      target: 'map',
-      controls: ol.control.defaults({
-        attributionOptions: {
-          collapsible: false
-        }
-      }),
-      view: view
-    });
-
-    var geolocation = new ol.Geolocation({
-      projection: view.getProjection(),
-      tracking: true,
-      trackingOptions: {
-        enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 6000
+  var map = new ol.Map({
+    layers: [
+    new ol.layer.Tile({
+      source: new ol.source.OSM()
+    })
+    ],
+    target: 'map',
+    controls: ol.control.defaults({
+      attributionOptions: {
+        collapsible: false
       }
-    });
+    }),
+    view: view
+  });
 
-    function el(id) {
-      return document.getElementById(id);
+  var geolocation = new ol.Geolocation({
+    projection: view.getProjection(),
+    tracking: true,
+    trackingOptions: {
+      enableHighAccuracy: true,
+      maximumAge: 1000,
+      timeout: 6000
     }
+  });
 
-    // el('track').addEventListener('change', function() {
-    //   geolocation.setTracking(true);
-    //   // geolocation.setTracking(this.checked);
-    // });
+  function el(id) {
+    return document.getElementById(id);
+  }
 
-    // update the HTML page when the position changes.
-    geolocation.on('change', function() {
-      console.log("Location changed");
+  // update the HTML page when the position changes.
+  geolocation.on('change', function() {
+    console.log("Location changed");
+    var coordinates = geolocation.getPosition();
+    el('pos-lon').innerText = coordinates[0];
+    el('pos-lat').innerText = coordinates[1];
+    el('accuracy').innerText = geolocation.getAccuracy() + ' [m]';
+    el('altitude').innerText = geolocation.getAltitude() + ' [m]';
+    el('altitudeAccuracy').innerText = geolocation.getAltitudeAccuracy() + ' [m]';
+    el('heading').innerText = geolocation.getHeading() + ' [rad]';
+    el('speed').innerText = geolocation.getSpeed() + ' [m/s]';
+  });
+
+  // handle geolocation error.
+  geolocation.on('error', function(error) {
+    var info = document.getElementById('info');
+    info.innerHTML = error.message;
+    info.style.display = '';
+  });
+
+  var accuracyFeature = new ol.Feature();
+  geolocation.on('change:accuracyGeometry', function() {
+    accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
+  });
+
+  var positionFeature = new ol.Feature();
+  positionFeature.setStyle(new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: 6,
+      fill: new ol.style.Fill({
+        color: '#3399CC'
+      }),
+      stroke: new ol.style.Stroke({
+        color: '#fff',
+        width: 2
+      })
+    })
+  }));
+
+  geolocation.on('change:position', function() {
+    if (geolocation.getAccuracy() < 50) {
       var coordinates = geolocation.getPosition();
-      el('pos-lon').innerText = coordinates[0];
-      el('pos-lat').innerText = coordinates[1];
-      el('accuracy').innerText = geolocation.getAccuracy() + ' [m]';
-      el('altitude').innerText = geolocation.getAltitude() + ' [m]';
-      el('altitudeAccuracy').innerText = geolocation.getAltitudeAccuracy() + ' [m]';
-      el('heading').innerText = geolocation.getHeading() + ' [rad]';
-      el('speed').innerText = geolocation.getSpeed() + ' [m/s]';
-    });
+      positionFeature.setGeometry(coordinates ?
+        new ol.geom.Point(coordinates) : null);
+    }
+  });
 
-    // handle geolocation error.
-    geolocation.on('error', function(error) {
-      var info = document.getElementById('info');
-      info.innerHTML = error.message;
-      info.style.display = '';
-    });
+  new ol.layer.Vector({
+    map: map,
+    source: new ol.source.Vector({
+      features: [accuracyFeature, positionFeature]
+    })
+  });
 
-    var accuracyFeature = new ol.Feature();
-    geolocation.on('change:accuracyGeometry', function() {
-      accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
-    });
 
-    var positionFeature = new ol.Feature();
-    positionFeature.setStyle(new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 6,
-        fill: new ol.style.Fill({
-          color: '#3399CC'
-        }),
-        stroke: new ol.style.Stroke({
-          color: '#fff',
-          width: 2
-        })
-      })
-    }));
 
-    geolocation.on('change:position', function() {
-      if (geolocation.getAccuracy() < 50) {
-        var coordinates = geolocation.getPosition();
-        positionFeature.setGeometry(coordinates ?
-          new ol.geom.Point(coordinates) : null);
-      }
-    });
+  // Do some geofencing
+  // Camden Town hall coordinates
+  var polyCoord = [
+  {
+    "name": "Camden Town Hall",
+    "coordinates":  [[-0.12591898441314694, 51.52897769699999],
+    [-0.1256453990936279, 51.52869068786285],
+    [-0.12476563453674312, 51.52904444305162],
+    [-0.12504994869232175, 51.529331449958704],
+    [-0.12591898441314694, 51.52897769699999]],
+    "function_inside": () => {
+      console.log("Camden!!");
+      el('geotags1').innerHTML = "Camden Town Hall";
+    },
+    "function_outside": () => {
+      el('geotags1').innerHTML = "";
+    }
+  },
+  {
+    "name": "Auditorium",
+    "coordinates": [[-0.1254254579544067, 51.52918127215159],
+    [-0.12511432170867917, 51.52890427623015],
+    [-0.1247763633728027, 51.52903776845085],
+    [-0.12504994869232175, 51.52932811267945],
+    [-0.1254254579544067, 51.52918127215159]],
+    "function_inside": () => {
+      console.log("Auditorium!");
+      auditoriumFunction();
+    },
+    "function_outside": () => {
+      el('geotags2').innerHTML = "";
+    }
+  },
+  {
+    "name": "Small Park",
+    "coordinates": [[-0.12417018413543701, 51.52708540572499],
+    [-0.12396097183227538, 51.52669492313336],
+    [-0.12303292751312254, 51.526885158660434],
+    [-0.1230865716934204, 51.52697193249654],
+    [-0.12317776679992674, 51.52696859504434],
+    [-0.1233386993408203, 51.52733237589169],
+    [-0.12358546257019042, 51.527295664194924],
+    [-0.12354791164398193, 51.52723559044546],
+    [-0.12417018413543701, 51.52708540572499],
+    ],
+    "function_inside": () => {
+      console.log("Small Park!");
+      el('geotags3').innerHTML = "You found the small park";
+    },
+    "function_outside": () => {
+      el('geotags3').innerHTML = "";
+    }
+  },
+  {
+    "name": "Brunswick Square",
+    "coordinates": [[-0.12281298637390137, 51.52472577186194],
+    [-0.12251794338226318, 51.52422846425853],
+    [-0.12229800224304198, 51.52400150327881],
+    [-0.12187957763671872, 51.523854645571504],
+    [-0.1209515333175659, 51.5240248669613],
+    [-0.1214611530303955, 51.52493937882949],
+    [-0.12281298637390137, 51.52472577186194]],
+    "function_inside": () => {
+      console.log("Brunswick");
+      el('geotags4').innerHTML = "Brunswick Square";
+    },
+    "function_outside": () => {
+      el('geotags4').innerHTML = "";
+    }
+  }
+  ]
 
-    new ol.layer.Vector({
-      map: map,
-      source: new ol.source.Vector({
-        features: [accuracyFeature, positionFeature]
-      })
-    });
 
-    // Do some geofencing
-    // Camden Town hall coordinates
-    var camdenCoord = [[51.5286883, -0.1256312],
-                      [ 51.5289842, -0.1259217],
-                      [ 51.5293304, -0.1250459],
-                      [51.5290490, -0.1247512],
-                    ];
-    // Camden Town hall coordinates
-    var auditoriumCoord = [[51.528924, -0.125107],
-                      [ 51.529225, -0.125378],
-                      [ 51.5293304, -0.1250459],
-                      [51.5290490, -0.1247512],
-                    ];
+  // Create a polygon out of the coordinates
+  //  Add the polygon to a collection of features
+  var polyFeatures = [];
+  var polygon;
+  for(var i = 0; i < polyCoord.length; i++) {
+    polygon = coordinatesToPolygon(polyCoord[i].coordinates, projection=origProj);
+    polyCoord[i].polygon = polygon;
+    polyFeatures.push(new ol.Feature({geometry: polygon}));
+  }
 
-    // Create a polygon out of the coordinates
-    var camdenTownHallPoly = coordinatesToPolygon(camdenCoord, projection=origProj, swapValues=true);
-    var auditoriumPoly = coordinatesToPolygon(auditoriumCoord, projection=origProj, swapValues=true);
+  // Add the polygons to the map
+  new ol.layer.Vector({
+    map: map,
+    source: new ol.source.Vector({
+      features: polyFeatures,
+    })
+  });
 
-    // Create a openlayer feature that can be plotted
-    var camdenTownHallFeature = new ol.Feature({geometry: camdenTownHallPoly});
-    var auditoriumFeature = new ol.Feature({geometry: auditoriumPoly});
-
-    // Add the polygons to the map
-    new ol.layer.Vector({
-        map: map,
-        source: new ol.source.Vector({
-          features: [camdenTownHallFeature, auditoriumFeature]
-        })
-      });
-
-    // Update the geotag depending on location
-    geolocation.on('change:position', function() {
-      // First work out whether the current user location is in the Camden Town Hall
+  // Update the geotag depending on location
+  geolocation.on('change:position', function() {
+    for(var i = 0; i < polyCoord.length; i++) {
+      // First work out whether the current user location is in the polygon
       // This should probably also include a check for the accuracy of the location.
-      var pointInPoly = inside(geolocation.getPosition(),
-                               camdenTownHallPoly.getCoordinates()[0]);
+      var pointInPoly = inside(geolocation.getPosition(), polyCoord[i].polygon.getCoordinates()[0]);
       // This if should probably include a check to see if the previous point in the series of triggers has been checked.
-      // This is a very simple tag that appears or not when in the Camden Town Hall.
+      // If we're in the zone, fire our function!
       if(pointInPoly) {
-        el('geotags1').innerHTML = "Camden Town Hall"
+        polyCoord[i].function_inside();
       } else {
-        el('geotags1').innerHTML = ""
+        polyCoord[i].function_outside();
       }
-
-      var pointInPoly = inside(geolocation.getPosition(),
-                               auditoriumPoly.getCoordinates()[0]);
-      pointInPoly = true;
-      if(pointInPoly) {
-        // This time we have written a function to call when we hit the auditorium.
-        // We have written it in a function enclosure to make sure it only ever runs once
-        auditoriumFunction();
-      }
-    });
+    }
+  });
 
   // The function we call when we hit the auditorium. The meet of the function will only ever be run once - clever!
   var auditoriumFunction = (function() {
@@ -196,7 +248,7 @@
       }
     }
   })();
-  </script>
+</script>
 </body>
 
 </html>

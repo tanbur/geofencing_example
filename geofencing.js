@@ -17,7 +17,7 @@ function inside(point, vs) {
   return inside;
 };
 
-function coordinatesToPolygon(coordinateArray, projection, swapValues=true) {
+function coordinatesToPolygon(coordinateArray, projection, swapValues=false) {
   // Take lat long and spit out a polygon you can plot
   // Swap over lat long to long lat
   // Also transforms the coordinates
