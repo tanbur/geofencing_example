@@ -61,8 +61,10 @@
     tracking: true,
     trackingOptions: {
       enableHighAccuracy: true,
-      maximumAge: 10,
-      timeout: 6000
+      // Maximum age in milliseconds
+      maximumAge: 1000,
+      // Timeout in milliseconds. Default is 5
+      timeout: 5000 
     }
   });
 
