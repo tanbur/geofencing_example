@@ -61,7 +61,7 @@
     tracking: true,
     trackingOptions: {
       enableHighAccuracy: true,
-      maximumAge: 1000,
+      maximumAge: 10,
       timeout: 6000
     }
   });
@@ -153,6 +153,7 @@
     [-0.1254254579544067, 51.52918127215159]],
     "function_inside": () => {
       console.log("Auditorium!");
+      // auditoriumFunction will only change the tag once, as it will only evaluate once
       auditoriumFunction();
     },
     "function_outside": () => {
@@ -173,11 +174,8 @@
     ],
     "function_inside": () => {
       console.log("Small Park!");
-      el('geotags3').innerHTML = "You found the small park";
+      el('geotags3').innerHTML = "You found the small park!";
     },
-    "function_outside": () => {
-      el('geotags3').innerHTML = "";
-    }
   },
   {
     "name": "Brunswick Square",
@@ -226,10 +224,14 @@
       // This if should probably include a check to see if the previous point in the series of triggers has been checked.
       // If we're in the zone, fire our function!
       if(pointInPoly) {
-        polyCoord[i].function_inside();
+        var func = polyCoord[i].function_inside;
       } else {
-        polyCoord[i].function_outside();
+        var func = polyCoord[i].function_outside;
       }
+
+      if(func !== undefined) {
+          func();
+        };
     }
   });
 
@@ -248,6 +250,8 @@
       }
     }
   })();
+
+  console.log(geolocation.getPosition());
 </script>
 </body>
 
