@@ -238,6 +238,7 @@
   });
 
   // The function we call when we hit the auditorium. The meet of the function will only ever be run once - clever!
+  // This is a javascript closure.
   var auditoriumFunction = (function() {
     // Instead of having a variable that might be lost on page refresh, check local storage instead.
     var evaluated = false;
@@ -252,8 +253,6 @@
       }
     }
   })();
-
-  console.log(geolocation.getPosition());
 </script>
 </body>
 
