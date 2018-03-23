@@ -11,6 +11,12 @@ Note:
 1. The "small park" tag will appear when you enter the park for the first time, and won't disappear.
 1. The "Brunswick Square" tag will appear/disappear upon entering/leaving. Same as the Camden Town Hall.
 
+## Onigo Example
+
+The [Onigo Example](https://tanbur.github.io/geofencing_example/example_onigo) is a more bespoke example script for Onigo-like adventures.
+The tags are as above, except the code will sequentially hide and show the tags/instructions while popping the sections so they don't get retriggered.
+This code lives in the ```example_onigo``` script.
+
 
 ## Polygon Selection
 
